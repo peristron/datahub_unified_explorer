@@ -1276,15 +1276,44 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
         
         # navigation based on mode
         if is_advanced:
+            # options for power user
+            options = [
+                "📊 Dashboard", 
+                "🗺️ Relationship Map", 
+                "📋 Schema Browser", 
+                "📚 KPI Recipes", 
+                "⚡ SQL Builder", 
+                "🔧 UDF Flattener", 
+                "✨ Schema Diff", 
+                "🤖 AI Assistant"
+            ]
+            # explanatory captions for power user
+            captions = [
+                "Overview, Search & Context",
+                "Visualize Connections (PK/FK)",
+                "Compare Tables Side-by-Side",
+                "Pre-packaged SQL Solutions",
+                "Generate JOIN Code",
+                "Pivot Custom Fields (EAV)",
+                "Compare against backups",
+                "Ask questions about data"
+            ]
+            
             view = st.radio(
                 "Navigation", 
-                ["📊 Dashboard", "🗺️ Relationship Map", "📋 Schema Browser", "📚 KPI Recipes", "⚡ SQL Builder", "🔧 UDF Flattener", "✨ Schema Diff", "🤖 AI Assistant"],
+                options,
+                captions=captions,
                 label_visibility="collapsed"
             )    
         else:
+            # options for quick explorer
+            options = ["📊 Dashboard", "🗺️ Relationship Map", "🤖 AI Assistant"]
+            captions = ["Overview & Search", "Visualize Connections", "Ask questions"]
+            
             view = st.radio(
                 "Navigation", 
-                ["📊 Dashboard", "🗺️ Relationship Map", "🤖 AI Assistant"],
+                options,
+                captions=captions,
                 label_visibility="collapsed"
             )
         
@@ -1306,11 +1335,11 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
         else:
             st.error("❌ No data loaded")
         
-        # --data mgmt, Backup Button--
+        # --data mgmt, backup button--
         with st.expander("⚙️ Data Management", expanded=df.empty):
             pasted_text = st.text_area("URLs to Scrape", height=100, value=DEFAULT_URLS)
             
-            # Button 1: Scrape & Update (Stacked, Full Width)
+            # button 1: scrape & update (stacked, full width)
             if st.button("🔄 Scrape & Update All URLs", type="primary", use_container_width=True, help="Scrape the URLs listed above, add any new datasets found, and refresh the schema."):
                 urls = [u.strip() for u in pasted_text.split('\n') if u.strip().startswith('http')]
                 if urls:
@@ -1323,7 +1352,7 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
                 else:
                     st.error("No valid URLs found")
             
-            # Button 2: Download Backup (Stacked, Full Width)
+            # button 2: download backup (stacked, full width)
             if not df.empty:
                 # generates timestamp for filename
                 timestamp = pd.Timestamp.now().strftime('%Y-%m-%d')
@@ -1331,7 +1360,7 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
                 # converts dataframe to CSV for download
                 csv = df.to_csv(index=False).encode('utf-8')
                 
-                # Visual spacer between buttons
+                # visual spacer between buttons
                 st.write("") 
                 
                 st.download_button(
@@ -1447,7 +1476,6 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
             with c_t2:
                 st.link_button("✂️ CSV Splitter", "https://csvsplittertool.streamlit.app/", help="Split large CSVs into smaller chunks.") 
     return view, selected_datasets
-
 
 def render_dashboard(df: pd.DataFrame):
     """renders the main dashboard with overview statistics and intelligent search."""
