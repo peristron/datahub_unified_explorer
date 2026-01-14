@@ -640,22 +640,30 @@ def get_orphan_datasets(df: pd.DataFrame) -> List[str]:
     return orphans
 
 
-def find_join_path(df: pd.DataFrame, source_dataset: str, target_dataset: str) -> Optional[List[str]]:
-    """finds the shortest path of joins between two datasets."""
+def find_all_paths(df: pd.DataFrame, source_dataset: str, target_dataset: str, cutoff: int = 4) -> List[List[str]]:
+    """
+    Finds ALL simple paths between two datasets up to a specific length (cutoff).
+    Returns a list of paths, sorted by length (shortest first).
+    """
     joins = get_joins(df)
     
     if joins.empty:
-        return None
+        return []
     
     G = nx.Graph()
     for _, r in joins.iterrows():
         G.add_edge(r['dataset_name_fk'], r['dataset_name_pk'], key=r['column_name'])
     
     try:
-        path = nx.shortest_path(G, source_dataset, target_dataset)
-        return path
+        # all_simple_paths finds every valid route without cycles
+        raw_paths = list(nx.all_simple_paths(G, source_dataset, target_dataset, cutoff=cutoff))
+        
+        # sort by length (number of nodes) so the "best" paths appear first
+        raw_paths.sort(key=len)
+        
+        return raw_paths
     except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+        return []
 
 
 def get_path_details(df: pd.DataFrame, path: List[str]) -> List[Dict]:
