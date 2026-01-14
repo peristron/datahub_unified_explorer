@@ -1701,7 +1701,7 @@ def render_dashboard(df: pd.DataFrame):
     if is_advanced:
         st.divider()
         st.subheader("🛤️ Path Finder")
-        st.caption("Find the shortest join path between two datasets")
+        st.caption("Find all valid join paths (up to 4 hops) between two datasets.")
         
         col_from, col_to, col_find = st.columns([2, 2, 1])
         
@@ -1714,26 +1714,42 @@ def render_dashboard(df: pd.DataFrame):
         with col_find:
             st.write("")
             st.write("")
-            find_path = st.button("Find Path", type="primary")
+            find_path = st.button("Find Paths", type="primary")
         
-        if find_path and source_ds and target_ds and source_ds != target_ds:
-            path = find_join_path(df, source_ds, target_ds)
-            if path:
-                st.success(f"Found path with {len(path) - 1} join(s)")
-                
-                path_details = get_path_details(df, path)
-                
-                path_text = []
-                for i, step in enumerate(path_details):
-                    path_text.append(f"**{step['from']}** → `{step['column']}` → **{step['to']}**")
-                
-                st.markdown(" → ".join([f"**{p}**" for p in path]))
-                
-                with st.expander("View Join Details"):
-                    for step in path_details:
-                        st.markdown(f"- `{step['from']}` joins to `{step['to']}` on column `{step['column']}`")
+        if find_path and source_ds and target_ds:
+            if source_ds == target_ds:
+                st.warning("Please select two different datasets.")
             else:
-                st.error("No path found between these datasets. They may not be connected.")
+                with st.spinner("Calculating network paths..."):
+                    # function to get multiple paths
+                    paths = find_all_paths(df, source_ds, target_ds, cutoff=4)
+                
+                if paths:
+                    count = len(paths)
+                    st.success(f"Found {count} valid path(s) (max 4 hops). Showing top {min(count, 5)}.")
+                    
+                    # limit to top 5 to avoid UI clutter
+                    for i, path in enumerate(paths[:5]):
+                        
+                        # calculate hops (nodes - 1)
+                        hops = len(path) - 1
+                        
+                        # visual distinction for "Best" path
+                        label = f"Option {i+1}: {hops} Join(s)"
+                        if i == 0: label += " (Shortest)"
+                        
+                        with st.expander(label, expanded=(i==0)):
+                            # breadcrumb visual
+                            st.markdown(" → ".join([f"**{p}**" for p in path]))
+                            
+                            # detailed breakdown
+                            path_details = get_path_details(df, path)
+                            st.markdown("---")
+                            for step in path_details:
+                                st.markdown(f"- `{step['from']}` joins to `{step['to']}` on column `{step['column']}`")
+                else:
+                    st.error("No path found within 4 hops. These datasets may be unrelated.")    
+
 
 def render_relationship_map(df: pd.DataFrame, selected_datasets: List[str]):
     """renders the relationship visualization with multiple graph types."""
